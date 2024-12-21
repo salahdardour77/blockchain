@@ -1,3 +1,5 @@
 \node_modules
 .env
+.idea
 deployment_config.json
+build/
