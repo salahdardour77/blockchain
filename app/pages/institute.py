@@ -10,17 +10,20 @@ st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
 
 load_dotenv()
 
-api_key = os.getenv("PINATA_API_KEY")
-api_secret = os.getenv("PINATA_API_SECRET")
 
-
-def upload_to_ipfs(file_name, file_content):
-    # Set up the Pinata API endpoint and headers
+def upload_to_ipfs(file_path):
+    # Set up the IPFS API endpoint and headers
     api_url = 'http://127.0.0.1:5001/api/v0/add'
 
 
     # Prepare the file for upload
-    with open(file_name, "rb") as file:
+    with open(file_path, "rb") as file:
+        file_name = os.path.basename(file_path)
+
+        # Read the file content
+        file_content = file.read()
+
+        # Prepare the files dictionary
         files = {"file": (file_name, file_content)}
 
         # Make the request
@@ -47,13 +50,15 @@ pdf = st.file_uploader("Upload Certificate")
 submit = form.form_submit_button("Submit")
 if submit and pdf:
     # Ensure the folder exists
-    os.makedirs("uploaded_files", exist_ok=True)
-    local_file_path = os.path.join("uploaded_files", pdf.name)
+    os.makedirs("pages\\uploaded_files", exist_ok=True)
+    local_file_path = os.path.join("pages\\uploaded_files", pdf.name)
 
-    pdf_content = pdf.getvalue()
-    pdf_name = "C:\\Users\dardo\PycharmProjects\\blockchain\\app\pages\School_internship_agreement_253826.pdf"
-    # Upload the PDF to Pinata
-    ipfs_hash = upload_to_ipfs(pdf_name, pdf_content)
+    with open(local_file_path, "wb") as file:
+        file.write(pdf.getvalue())
+
+    pdf_name = pdf.name
+    # Upload the PDF to IPFS
+    ipfs_hash = upload_to_ipfs(local_file_path)
     data_to_hash = f"{candidate_name}{speciality}{school_name}".encode('utf-8')
     uid = hashlib.sha256(data_to_hash).hexdigest()
 
@@ -64,7 +69,7 @@ if submit and pdf:
 
     # Check the status of the transaction (1 = success, 0 = failure)
     if receipt.status == 1:
-        st.success(f"Certificate successfully generated with IPFS Hash: {ipfs_hash}")
+        st.success(f"Certificate successfully generated with IPFS Hash: {ipfs_hash}, {tx_hash}")
     else:
         st.error("Transaction failed. Please try again.")
 
